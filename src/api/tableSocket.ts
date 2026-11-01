@@ -5,71 +5,97 @@ const API_URL = import.meta.env.VITE_API_URL ?? ''
 
 export type TableSocket = Socket
 
-export function connectTableSocket(): TableSocket {
+export interface PlayerHello {
+  playerId: string
+  sessionToken: string
+  nickname: string
+  email: string
+  userId: string
+}
+
+export function connectTableSocket(accessToken: string): TableSocket {
   return io(API_URL || undefined, {
     transports: ['websocket'],
     autoConnect: true,
+    auth: { token: accessToken },
   })
 }
 
-export async function createTable(
+async function ack<T extends object>(
   socket: TableSocket,
-  config?: Record<string, unknown>,
-): Promise<{ gameId: string }> {
-  const res = (await socket.emitWithAck('table:create', { config })) as {
-    gameId?: string
+  event: string,
+  body?: unknown,
+): Promise<T> {
+  const res = (await socket.emitWithAck(event, body ?? {})) as T & {
     error?: string
   }
-  if (res.error || !res.gameId) {
-    throw new Error(res.error ?? 'CREATE_FAILED')
+  if (res && typeof res === 'object' && 'error' in res && res.error) {
+    throw new Error(res.error)
   }
-  return { gameId: res.gameId }
+  return res
 }
 
-export async function joinTable(
+export async function playerHello(
   socket: TableSocket,
-  body: { gameId: string; playerId: string; name: string },
-): Promise<PlayerView> {
-  const res = (await socket.emitWithAck('table:join', body)) as {
+  nickname: string,
+): Promise<PlayerHello> {
+  return ack<PlayerHello>(socket, 'player:hello', { nickname })
+}
+
+export async function createRoom(
+  socket: TableSocket,
+  config?: Record<string, unknown>,
+): Promise<{ roomId: string; code: string }> {
+  const res = await ack<{ roomId?: string; code?: string }>(
+    socket,
+    'room:create',
+    { config },
+  )
+  if (!res.roomId || !res.code) {
+    throw new Error('CREATE_FAILED')
+  }
+  return { roomId: res.roomId, code: res.code }
+}
+
+export async function joinRoom(
+  socket: TableSocket,
+  code: string,
+): Promise<{ roomId: string; view: PlayerView }> {
+  const res = await ack<{
     ok?: boolean
+    roomId?: string
     view?: PlayerView
-    error?: string
+  }>(socket, 'room:join', { code })
+  if (!res.roomId || !res.view) {
+    throw new Error('JOIN_FAILED')
   }
-  if (res.error || !res.view) {
-    throw new Error(res.error ?? 'JOIN_FAILED')
-  }
-  return res.view
+  return { roomId: res.roomId, view: res.view }
+}
+
+export async function startGame(
+  socket: TableSocket,
+  roomId: string,
+): Promise<void> {
+  await ack(socket, 'game:start', { roomId })
 }
 
 export async function startHand(
   socket: TableSocket,
-  gameId: string,
+  roomId: string,
 ): Promise<void> {
-  const res = (await socket.emitWithAck('table:start', { gameId })) as {
-    ok?: boolean
-    error?: string
-  }
-  if (res.error) throw new Error(res.error)
+  await ack(socket, 'hand:start', { roomId })
 }
 
 export async function sendAction(
   socket: TableSocket,
-  body: { gameId: string; type: ActionType; amount?: number },
+  body: { roomId: string; type: ActionType; amount?: number },
 ): Promise<void> {
-  const res = (await socket.emitWithAck('table:action', body)) as {
-    ok?: boolean
-    error?: string
-  }
-  if (res.error) throw new Error(res.error)
+  await ack(socket, 'table:action', body)
 }
 
 export async function finishHand(
   socket: TableSocket,
-  gameId: string,
+  roomId: string,
 ): Promise<void> {
-  const res = (await socket.emitWithAck('table:finish', { gameId })) as {
-    ok?: boolean
-    error?: string
-  }
-  if (res.error) throw new Error(res.error)
+  await ack(socket, 'table:finish', { roomId })
 }

@@ -149,6 +149,36 @@ input {
   border-color: var(--accent);
 }
 
+.field__otp {
+  letter-spacing: 0.35em;
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+  font-size: 1.25rem;
+}
+
+.auth__actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 0.35rem;
+}
+
+.auth-shell {
+  width: min(420px, 100%);
+  display: grid;
+  gap: 0.5rem;
+}
+
+.auth__session {
+  margin: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+
 .btn {
   border: 1px solid rgba(243, 235, 224, 0.22);
   border-radius: 0.65rem;

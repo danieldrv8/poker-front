@@ -13,33 +13,30 @@ export function Lobby({
   connected: boolean
   busy: boolean
   error: string | null
-  onHost: (name: string, playerId: string) => void
-  onJoin: (gameId: string, name: string, playerId: string) => void
+  onHost: (nickname: string) => void
+  onJoin: (code: string, nickname: string) => void
 }) {
   const [mode, setMode] = useState<'host' | 'join'>(
-    params.get('gameId') ? 'join' : 'host',
+    params.get('code') ? 'join' : 'host',
   )
-  const [gameId, setGameId] = useState(params.get('gameId') ?? '')
+  const [code, setCode] = useState(params.get('code') ?? '')
   const [name, setName] = useState(params.get('name') ?? '')
-  const [playerId, setPlayerId] = useState(
-    params.get('playerId') ?? (params.get('gameId') ? 'p2' : 'p1'),
-  )
 
   const hint = useMemo(() => {
     if (mode === 'host') {
-      return 'Crea la mesa en esta pestaña. Copia el ID y ábrela en otra como invitad@.'
+      return 'Crea la mesa en esta pestaña. Comparte el código e invita a alguien.'
     }
-    return 'Pega el ID de mesa de la otra pestaña y siéntate.'
+    return 'Pega el código de la otra pestaña y siéntate.'
   }, [mode])
 
   function submit(e: FormEvent) {
     e.preventDefault()
-    if (!name.trim() || !playerId.trim()) return
+    if (!name.trim()) return
     if (mode === 'host') {
-      onHost(name.trim(), playerId.trim())
+      onHost(name.trim())
     } else {
-      if (!gameId.trim()) return
-      onJoin(gameId.trim(), name.trim(), playerId.trim())
+      if (!code.trim()) return
+      onJoin(code.trim(), name.trim())
     }
   }
 
@@ -71,33 +68,24 @@ export function Lobby({
 
         {mode === 'join' && (
           <label className="field">
-            <span>ID de mesa</span>
+            <span>Código de mesa</span>
             <input
-              value={gameId}
-              onChange={(e) => setGameId(e.target.value)}
-              placeholder="uuid de la otra pestaña"
+              value={code}
+              onChange={(e) => setCode(e.target.value.toUpperCase())}
+              placeholder="ABC123"
               autoComplete="off"
+              autoCapitalize="characters"
               required
             />
           </label>
         )}
 
         <label className="field">
-          <span>Nombre</span>
+          <span>Apodo</span>
           <input
             value={name}
             onChange={(e) => setName(e.target.value)}
             placeholder={mode === 'host' ? 'Ana' : 'Bob'}
-            required
-          />
-        </label>
-
-        <label className="field">
-          <span>Player ID</span>
-          <input
-            value={playerId}
-            onChange={(e) => setPlayerId(e.target.value)}
-            placeholder="p1"
             required
           />
         </label>
@@ -107,7 +95,13 @@ export function Lobby({
           type="submit"
           disabled={!connected || busy}
         >
-          {!connected ? 'Conectando…' : busy ? 'Espera…' : mode === 'host' ? 'Crear y sentarme' : 'Sentarme'}
+          {!connected
+            ? 'Conectando…'
+            : busy
+              ? 'Espera…'
+              : mode === 'host'
+                ? 'Crear y sentarme'
+                : 'Sentarme'}
         </button>
 
         {error && <p className="banner banner--error">{error}</p>}
@@ -115,7 +109,7 @@ export function Lobby({
         <p className="lobby__status">
           API{' '}
           <span className={connected ? 'dot dot--on' : 'dot dot--off'} />
-          {connected ? 'en línea' : 'offline — arranca apps/api en :3000'}
+          {connected ? 'en línea' : 'offline — arranca el API en :3000'}
         </p>
       </form>
     </div>
