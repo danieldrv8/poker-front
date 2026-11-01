@@ -1,26 +1,29 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import {
   connectTableSocket,
-  createTable,
+  createRoom,
   finishHand,
-  joinTable,
+  joinRoom,
+  playerHello,
   sendAction,
+  startGame,
   startHand,
   type TableSocket,
 } from '../api/tableSocket'
 import type { ActionType, PlayerView } from '../types'
 
-export function useTableSession() {
+export function useTableSession(accessToken: string) {
   const socketRef = useRef<TableSocket | null>(null)
   const [connected, setConnected] = useState(false)
-  const [gameId, setGameId] = useState<string | null>(null)
+  const [roomId, setRoomId] = useState<string | null>(null)
+  const [roomCode, setRoomCode] = useState<string | null>(null)
   const [playerId, setPlayerId] = useState<string | null>(null)
   const [view, setView] = useState<PlayerView | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
 
   useEffect(() => {
-    const socket = connectTableSocket()
+    const socket = connectTableSocket(accessToken)
     socketRef.current = socket
 
     const onConnect = () => setConnected(true)
@@ -45,7 +48,7 @@ export function useTableSession() {
       socket.close()
       socketRef.current = null
     }
-  }, [])
+  }, [accessToken])
 
   const run = useCallback(async (fn: () => Promise<void>) => {
     setBusy(true)
@@ -59,79 +62,85 @@ export function useTableSession() {
     }
   }, [])
 
+  const ensureHello = useCallback(async (socket: TableSocket, nickname: string) => {
+    const session = await playerHello(socket, nickname)
+    setPlayerId(session.playerId)
+    return session
+  }, [])
+
   const hostAndJoin = useCallback(
-    async (name: string, id: string) => {
+    async (nickname: string) => {
       const socket = socketRef.current
       if (!socket) return
       await run(async () => {
-        const { gameId: created } = await createTable(socket, {
+        await ensureHello(socket, nickname)
+        const created = await createRoom(socket, {
           small_blind: 10,
           big_blind: 20,
           starting_chips: 1000,
         })
-        const initial = await joinTable(socket, {
-          gameId: created,
-          playerId: id,
-          name,
-        })
-        setGameId(created)
-        setPlayerId(id)
-        setView(initial)
+        // Host is already seated; join by code to obtain the waiting view.
+        const joined = await joinRoom(socket, created.code)
+        setRoomId(joined.roomId)
+        setRoomCode(created.code)
+        setView(joined.view)
       })
     },
-    [run],
+    [ensureHello, run],
   )
 
   const joinExisting = useCallback(
-    async (existingGameId: string, name: string, id: string) => {
+    async (code: string, nickname: string) => {
       const socket = socketRef.current
       if (!socket) return
       await run(async () => {
-        const initial = await joinTable(socket, {
-          gameId: existingGameId,
-          playerId: id,
-          name,
-        })
-        setGameId(existingGameId)
-        setPlayerId(id)
-        setView(initial)
+        await ensureHello(socket, nickname)
+        const joined = await joinRoom(socket, code)
+        setRoomId(joined.roomId)
+        setRoomCode(code.trim().toUpperCase())
+        setView(joined.view)
       })
     },
-    [run],
+    [ensureHello, run],
   )
 
   const start = useCallback(async () => {
     const socket = socketRef.current
-    if (!socket || !gameId) return
+    if (!socket || !roomId || !view) return
     await run(async () => {
-      await startHand(socket, gameId)
+      if (view.phase === 'WAITING') {
+        await startGame(socket, roomId)
+      } else {
+        await startHand(socket, roomId)
+      }
     })
-  }, [gameId, run])
+  }, [roomId, run, view])
 
   const act = useCallback(
     async (type: ActionType, amount?: number) => {
       const socket = socketRef.current
-      if (!socket || !gameId) return
+      if (!socket || !roomId) return
       await run(async () => {
-        await sendAction(socket, { gameId, type, amount })
+        await sendAction(socket, { roomId, type, amount })
       })
     },
-    [gameId, run],
+    [roomId, run],
   )
 
   const finish = useCallback(async () => {
     const socket = socketRef.current
-    if (!socket || !gameId) return
+    if (!socket || !roomId) return
     await run(async () => {
-      await finishHand(socket, gameId)
+      await finishHand(socket, roomId)
     })
-  }, [gameId, run])
+  }, [roomId, run])
 
   const clearError = useCallback(() => setError(null), [])
 
   return {
     connected,
-    gameId,
+    roomId,
+    roomCode,
     playerId,
     view,
     error,

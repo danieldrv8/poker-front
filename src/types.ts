@@ -35,7 +35,6 @@ export interface PlayerView {
 
 export interface LobbyForm {
   mode: 'host' | 'join'
-  gameId: string
-  playerId: string
+  code: string
   name: string
 }

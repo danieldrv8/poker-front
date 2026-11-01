@@ -76,10 +76,10 @@ export function FeltTable({
         <button
           type="button"
           className="btn btn--ghost"
-          title="Copiar ID de mesa"
+          title="Copiar código de mesa"
           onClick={() => void navigator.clipboard.writeText(gameId)}
         >
-          ID · {gameId.slice(0, 8)}…
+          Código · {gameId}
         </button>
       </div>
 
