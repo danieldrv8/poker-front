@@ -302,11 +302,47 @@ input {
 
 .board__pot {
   flex-basis: 100%;
-  margin: 0.65rem 0 0;
-  text-align: center;
-  font-size: 0.8rem;
+  margin: 0.85rem 0 0;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: end;
+  gap: 1.25rem 1.75rem;
   color: var(--muted);
+  font-size: 0.8rem;
   letter-spacing: 0.04em;
+}
+
+.board__pot-pile,
+.board__street {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+}
+
+.board__pot-copy {
+  display: grid;
+  gap: 0.1rem;
+  text-align: left;
+  line-height: 1.15;
+}
+
+.board__pot-label {
+  font-size: 0.65rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: rgba(196, 184, 168, 0.75);
+}
+
+.board__pot-copy strong {
+  color: var(--cream);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.board__street-sum {
+  font-size: 0.68rem;
+  color: var(--accent);
 }
 
 .seats {
@@ -359,7 +395,100 @@ input {
   text-align: center;
 }
 
+.seat__chips {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.chip-stack {
+  --chip-w: 0.95rem;
+  --chip-h: 0.28rem;
+  --chip-gap: 0.22rem;
+  position: relative;
+  display: inline-block;
+  width: var(--chip-w);
+  height: calc(var(--chip-h) + var(--chip-gap) * 4);
+  flex-shrink: 0;
+  align-self: center;
+}
+
+.chip-stack--md {
+  --chip-w: 1.2rem;
+  --chip-h: 0.34rem;
+  --chip-gap: 0.26rem;
+}
+
+.chip-stack--lg {
+  --chip-w: 1.55rem;
+  --chip-h: 0.42rem;
+  --chip-gap: 0.3rem;
+  filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.35));
+}
+
+.chip-stack--empty {
+  opacity: 0.35;
+}
+
+.chip-stack__disc {
+  position: absolute;
+  left: 0;
+  bottom: calc(var(--i, 0) * var(--chip-gap));
+  width: var(--chip-w);
+  height: var(--chip-h);
+  border-radius: 50%;
+  box-shadow:
+    0 1px 0 rgba(0, 0, 0, 0.35),
+    inset 0 1px 0 rgba(255, 255, 255, 0.35);
+}
+
+.chip-stack__disc--0 {
+  background:
+    radial-gradient(ellipse 55% 45% at 50% 35%, rgba(255, 255, 255, 0.35), transparent 55%),
+    repeating-conic-gradient(
+      from 0deg,
+      #c9a24a 0deg 18deg,
+      #f3ebe0 18deg 36deg
+    );
+  border: 1px solid #8a6a2e;
+}
+
+.chip-stack__disc--1 {
+  background:
+    radial-gradient(ellipse 55% 45% at 50% 35%, rgba(255, 255, 255, 0.25), transparent 55%),
+    repeating-conic-gradient(
+      from 12deg,
+      #8b1e1e 0deg 18deg,
+      #f3ebe0 18deg 36deg
+    );
+  border: 1px solid #5c1212;
+}
+
+.chip-stack__disc--2 {
+  background:
+    radial-gradient(ellipse 55% 45% at 50% 35%, rgba(255, 255, 255, 0.28), transparent 55%),
+    repeating-conic-gradient(
+      from 6deg,
+      #1a3a6e 0deg 18deg,
+      #f3ebe0 18deg 36deg
+    );
+  border: 1px solid #0f2444;
+}
+
+.chip-stack__disc--ghost {
+  background: repeating-conic-gradient(
+    from 0deg,
+    rgba(196, 184, 168, 0.45) 0deg 18deg,
+    rgba(243, 235, 224, 0.35) 18deg 36deg
+  );
+  border: 1px solid rgba(196, 184, 168, 0.4);
+  bottom: 0;
+}
+
 .seat__bet {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
   color: var(--accent);
 }
 
