@@ -1,4 +1,5 @@
 import type { PlayerView } from '../types'
+import { ChipStack } from './ChipStack'
 import { PlayingCard } from './PlayingCard'
 
 function Seat({
@@ -28,9 +29,17 @@ function Seat({
           {player.name}
           {isYou ? ' (tú)' : ''}
         </strong>
-        <span>{player.chips} chips</span>
+        <span className="seat__chips">
+          <ChipStack amount={player.chips} />
+          <span>
+            {player.chips} chips
+          </span>
+        </span>
         {player.current_bet > 0 && (
-          <span className="seat__bet">Bet {player.current_bet}</span>
+          <span className="seat__bet">
+            <ChipStack amount={player.current_bet} />
+            <span>Bet {player.current_bet}</span>
+          </span>
         )}
         {isButton && <span className="seat__btn">D</span>}
         {player.all_in && <span className="seat__tag">ALL-IN</span>}
@@ -52,6 +61,8 @@ export function FeltTable({
   gameId: string
 }) {
   const sorted = [...view.players].sort((a, b) => a.seat - b.seat)
+  const pot = view.players.reduce((sum, p) => sum + p.total_bet, 0)
+  const streetBets = view.players.reduce((sum, p) => sum + p.current_bet, 0)
 
   return (
     <section className="felt-wrap">
@@ -82,7 +93,28 @@ export function FeltTable({
               <PlayingCard key={`board-${i}`} card={card} index={i} />
             ))
           )}
-          <p className="board__pot">Pot commitment · bet {view.current_bet}</p>
+          <div className="board__pot">
+            <div className="board__pot-pile" aria-label={`Pot ${pot}`}>
+              <ChipStack amount={pot} size="lg" />
+              <div className="board__pot-copy">
+                <span className="board__pot-label">Pot</span>
+                <strong>{pot}</strong>
+              </div>
+            </div>
+            <div
+              className="board__street"
+              aria-label={`Apuesta del turno ${view.current_bet}, en mesa ${streetBets}`}
+            >
+              <ChipStack amount={Math.max(view.current_bet, streetBets)} size="md" />
+              <div className="board__pot-copy">
+                <span className="board__pot-label">Bet</span>
+                <strong>{view.current_bet}</strong>
+                {streetBets > 0 && (
+                  <span className="board__street-sum">· {streetBets} en calle</span>
+                )}
+              </div>
+            </div>
+          </div>
         </div>
 
         <div className="seats">
